@@ -1,4 +1,8 @@
 ESX = nil
+local currentcinema
+local movie_choosed
+local MovieState = false
+local cin_screen = GetHashKey("v_ilev_cin_screen")
 
 Citizen.CreateThread(function()
 	while ESX == nil do
@@ -6,10 +10,6 @@ Citizen.CreateThread(function()
 		Citizen.Wait(0)
 	end
 end)
-
-local currentcinema
-local movie_choosed
-local MovieState = false
 
 -- Configure the coordinates for all the cinemas
 
@@ -21,14 +21,11 @@ function LoadBlips()
 		SetBlipSprite(blip, 135)
 		SetBlipScale(blip, 1.2)
 		SetBlipColour(blip, 25)
-		SetBlipAsShortRange(blip, false)
+		SetBlipAsShortRange(blip, true)
 
 		BeginTextCommandSetBlipName("STRING")
 		AddTextComponentSubstringPlayerName("Cinémas")
 		EndTextCommandSetBlipName(blip)
-
-		-- loads the theater interior
-		RequestIpl("v_cinema")
 	end
 end
 
@@ -36,8 +33,6 @@ function SetupMovie()
 	local cinema = GetInteriorAtCoords(320.217, 263.81, 82.974)
 	LoadInterior(cinema)
 
-	-- this gets the hash key of the cinema screen
-	cin_screen = GetHashKey("v_ilev_cin_screen")
 	if not DoesEntityExist(tv) then
 		tv = CreateObjectNoOffset(cin_screen, 320.1257, 248.6608, 86.56934, 1, true, false)
 		SetEntityHeading(tv, 179.99)
@@ -55,7 +50,7 @@ function SetupMovie()
 		LinkNamedRendertarget(cin_screen)
 	end
 
-	rendertargetid = GetNamedRendertargetRenderId("cinscreen")
+	local rendertargetid = GetNamedRendertargetRenderId("cinscreen")
 
 	-- this checks if the rendertarget is linked AND registered 
 	if IsNamedRendertargetLinked(cin_screen) and IsNamedRendertargetRegistered("cinscreen") then
@@ -93,7 +88,6 @@ end
 function DeconstructMovie()
 	local obj = GetClosestObjectOfType(319.884, 262.103, 82.917, 20.475, cin_screen, 0, 0, 0)
 
-	cin_screen = GetHashKey("v_ilev_cin_screen")
 	SetTvChannel(-1)
 	ReleaseNamedRendertarget(GetHashKey("cinscreen"))
 	SetTextRenderId(GetDefaultScriptRendertargetRenderId())
@@ -118,11 +112,13 @@ function CreateMovieThread()
 		end
 	end)
 end
+
 --this is the enter theater stuff
 function IsPlayerInArea()
-	playerPed = PlayerPedId()
-	playerCoords = GetEntityCoords(playerPed, true)
-	hour = GetClockHours()
+	local playerPed = PlayerPedId()
+	local playerCoords = GetEntityCoords(playerPed)
+	local hour = GetClockHours()
+
 	for k,v in ipairs(Config.CinemaLocations) do
 
 		-- Check if the player is near the cinema
@@ -130,25 +126,16 @@ function IsPlayerInArea()
 
 			-- Check if the cinema is open or closed.
 			if hour < Config.OpeningHour or hour > Config.ClosingHour then
-				ESX.ShowHelpNotification("Le cinema est ~r~fermé ~w~mercide revenir entre 1am et 22pm.", 0)
+				ESX.ShowHelpNotification('Le cinema est ~r~fermé~s~ mercide revenir entre 1am et 22pm.')
 			else
-				ESX.ShowHelpNotification("Appuyez sur ~INPUT_CONTEXT~ pour entrer dans la salle de cinéma.", 0)
+				ESX.ShowHelpNotification('Appuyez sur ~INPUT_CONTEXT~ pour entrer dans la salle de cinéma.')
 
 				-- Check if the player is near the cinema and pressed "INPUT_CONTEXT"
 				if IsControlJustReleased(0, 38) then
 					ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'menu_cinema', {
-						title = 'Programmation',
-						align = 'top-left',
-						elements = {
-							{label = 'Cartoon - 10$', value = 'PL_CINEMA_CARTOON'},
-							{label = 'Fame or Shame - 10$', value = 'PL_LES1_FAME_OR_SHAME'},
-							{label = 'Action - 10$', value = 'PL_CINEMA_ACTION'},
-							{label = 'ArtHouse - 10$', value = 'PL_CINEMA_ARTHOUSE'},
-							{label = 'Meltown - 10$', value = 'PL_CINEMA_MULTIPLAYER'},
-							{label = 'Howitzer - 10$', value = 'PL_WEB_HOWITZER'},
-							{label = 'CNT - 10$', value = 'PL_STD_CNT'},
-							{label = 'Rangers - 10$', value = 'PL_WEB_RANGERS'}
-						}
+						title    = 'Programmation',
+						align    = 'top-left',
+						elements = Config.AvailableCinemaShows
 					}, function(data, menu)
 						menu.close()
 						movie_choosed = data.current.value
@@ -159,7 +146,12 @@ function IsPlayerInArea()
 								SetupMovie()
 
 								Citizen.Wait(500)
-								SetEntityCoords(playerPed, 320.217, 263.81, 81.974, true, true, true, true)
+								ESX.Game.Teleport(playerPed, {
+									x = 320.217,
+									y = 263.81,
+									z = 81.974
+								})
+
 								DoScreenFadeIn(800)
 								Citizen.Wait(30)
 
@@ -167,12 +159,11 @@ function IsPlayerInArea()
 								TriggerEvent('EnteringInCinema')
 								SetEntityHeading(playerPed, 180.475)
 								TaskLookAtCoord(PlayerPedId(), 319.259, 251.827, 85.648, -1, 2048, 3)
-								FreezeEntityPosition(PlayerPedId(), 1)	
-								SetNotificationTextEntry('STRING')
-								AddTextComponentString("Appuyez sur la touche ~r~E ~w~pour sortir du cinéma.")
-								DrawNotification(false, false)
+								FreezeEntityPosition(PlayerPedId(), 1)
+
+								ESX.ShowNotification('Appuyez sur la touche ~r~E~s~ pour sortir du cinéma.')
 							else
-								TriggerEvent('esx:showNotification', "Vous n'avez pas assez d'argent !")
+								ESX.ShowNotification('Vous n\'avez pas assez d\'argent!')
 							end
 						end)
 
@@ -200,6 +191,9 @@ Citizen.CreateThread(function()
 
 	-- Create the blips for the cinema's
 	LoadBlips()
+
+	-- loads the theater interior
+	RequestIpl('v_cinema')
 end)
 
 Citizen.CreateThread(function()
@@ -211,18 +205,36 @@ Citizen.CreateThread(function()
 		if IsControlJustReleased(0, 38) and GetRoomKeyFromEntity(playerPed) == -1337806789 then
 			DoScreenFadeOut(1000)
 			if currentcinema == "Downtown" then
-				SetEntityCoords(playerPed, 297.891, 193.296, 104.344, 161.925)
+				ESX.Game.Teleport(playerPed, {
+					x = 297.891,
+					y = 193.296,
+					z = 104.344
+				}, function()
+					SetEntityHeading(playerPed, 161.9)
+				end)
 			elseif currentcinema == "Morningwood" then
-				SetEntityCoords(playerPed, -1421.356, -198.388, 47.28, 350.0)
+				ESX.Game.Teleport(playerPed, {
+					x = -1421.356,
+					y = -198.388,
+					z = 47.28
+				}, function()
+					SetEntityHeading(playerPed, 350.0)
+				end)
 			elseif currentcinema == "Vinewood" then
-				SetEntityCoords(playerPed, 303.278, 142.258, 103.846, 350.0)
+				ESX.Game.Teleport(playerPed, {
+					x = 303.278,
+					y = 142.258,
+					z = 103.846
+				}, function()
+					SetEntityHeading(playerPed, 350.0)
+				end)
 			end
 
 			Citizen.Wait(30)
 			DoScreenFadeIn(800)
 			TriggerEvent('GetOutCinema')
 			FreezeEntityPosition(playerPed, 0)
-			SetFollowPedCamViewMode(fistPerson)
+			SetFollowPedCamViewMode(4)
 			DeconstructMovie()
 			SetPlayerInvincible(PlayerId(), false)
 			--ClearRoomForEntity(playerPed)
@@ -233,7 +245,7 @@ Citizen.CreateThread(function()
 			--SetPlayerInvisibleLocally(PlayerId(), true)
 			--SetEntityVisible(playerPed, false)
 			SetPlayerInvincible(PlayerId(), true)
-			SetCurrentPedWeapon(playerPed, GetHashKey("weapon_unarmed"), 1)
+			SetCurrentPedWeapon(playerPed, GetHashKey("WEAPON_UNARMED"), 1)
 			SetFollowPedCamViewMode(4)
 		else
 			--SetEntityVisible(playerPed, true)
