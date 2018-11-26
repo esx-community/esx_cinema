@@ -33,8 +33,8 @@ end
 - Pour terminer, à la fin, ajoutez :
 
 ```lua
-RegisterNetEvent('GetOutCinema')
-AddEventHandler('GetOutCinema', function()
+RegisterNetEvent('esx_cinema:exitedCinema')
+AddEventHandler('esx_cinema:exitedCinema', function()
 	if inCinema == true then
 		inCinema = false
 	end

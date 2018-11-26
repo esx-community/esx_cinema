@@ -1,6 +1,6 @@
 ESX = nil
 local currentcinema
-local movie_choosed
+local choosenShow
 local MovieState = false
 local cin_screen = GetHashKey("v_ilev_cin_screen")
 
@@ -9,14 +9,19 @@ Citizen.CreateThread(function()
 		TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 		Citizen.Wait(0)
 	end
+
+	-- prettify menu childs
+	for k, v in pairs(Config.AvailableCinemaShows) do
+		v.label = ('%s - <span style="color:green;">%s</span>'):format(v.label, _U('menu_item', ESX.Math.GroupDigits(price)))
+	end
 end)
 
--- Configure the coordinates for all the cinemas
+
 
 -- adds blips for movie theater
 function LoadBlips()
 	for k,v in ipairs(Config.CinemaLocations) do
-		local blip = AddBlipForCoord(v.x, v.y, v.z)
+		local blip = AddBlipForCoord(v.coord)
 
 		SetBlipSprite(blip, 135)
 		SetBlipScale(blip, 1.2)
@@ -24,7 +29,7 @@ function LoadBlips()
 		SetBlipAsShortRange(blip, true)
 
 		BeginTextCommandSetBlipName("STRING")
-		AddTextComponentSubstringPlayerName("Cinémas")
+		AddTextComponentSubstringPlayerName(_U('blip_cinema'))
 		EndTextCommandSetBlipName(blip)
 	end
 end
@@ -40,7 +45,7 @@ function SetupMovie()
 		tv = GetClosestObjectOfType(319.884, 262.103, 82.917, 20.475, cin_screen, 0, 0, 0)
 	end
 
-	-- this checks if the rendertarget is registered and  registers rendertarget
+	-- this checks if the rendertarget is registered and registers rendertarget
 	if not IsNamedRendertargetRegistered("cinscreen") then
 		RegisterNamedRendertarget("cinscreen", 0)
 	end
@@ -55,9 +60,9 @@ function SetupMovie()
 	-- this checks if the rendertarget is linked AND registered 
 	if IsNamedRendertargetLinked(cin_screen) and IsNamedRendertargetRegistered("cinscreen") then
 		-- this sets the rendertargets channel and video
-		Citizen.InvokeNative(0x9DD5A62390C3B735, 2, movie_choosed, 0)
+		Citizen.InvokeNative(0x9DD5A62390C3B735, 2, choosenShow, 0)
 
-		-- this sets the rendertarget	
+		-- this sets the rendertarget
 		SetTextRenderId(rendertargetid)
 
 		-- sets the volume
@@ -99,7 +104,7 @@ end
 function CreateMovieThread()
 	Citizen.CreateThread(function()
 		SetTextRenderId(GetNamedRendertargetRenderId("cinscreen"))
-		Citizen.InvokeNative(0x9DD5A62390C3B735, 2, movie_choosed, 0)
+		Citizen.InvokeNative(0x9DD5A62390C3B735, 2, choosenShow, 0)
 		SetTvChannel(2)
 		EnableMovieSubtitles(1)
 		Citizen.InvokeNative(0x67A346B3CDB15CA5, 100.0)
@@ -122,23 +127,23 @@ function IsPlayerInArea()
 	for k,v in ipairs(Config.CinemaLocations) do
 
 		-- Check if the player is near the cinema
-		if GetDistanceBetweenCoords(playerCoords, v.x, v.y, v.z) < 4.8 then
+		if GetDistanceBetweenCoords(playerCoords, v.coord) < 4.8 then
 
 			-- Check if the cinema is open or closed.
 			if hour < Config.OpeningHour or hour > Config.ClosingHour then
-				ESX.ShowHelpNotification('Le cinema est ~r~fermé~s~ mercide revenir entre 1am et 22pm.')
+				ESX.ShowHelpNotification(_U('cinema_prompt_closed'))
 			else
-				ESX.ShowHelpNotification('Appuyez sur ~INPUT_CONTEXT~ pour entrer dans la salle de cinéma.')
+				ESX.ShowHelpNotification(_U('cinema_prompt'))
 
 				-- Check if the player is near the cinema and pressed "INPUT_CONTEXT"
 				if IsControlJustReleased(0, 38) then
 					ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'menu_cinema', {
-						title    = 'Programmation',
+						title    = _U('cinema_menutitle'),
 						align    = 'top-left',
 						elements = Config.AvailableCinemaShows
 					}, function(data, menu)
 						menu.close()
-						movie_choosed = data.current.value
+						choosenShow = data.current.showName
 
 						ESX.TriggerServerCallback('esx_cinema:payPrice', function(paid)
 							if paid then
@@ -156,16 +161,17 @@ function IsPlayerInArea()
 								Citizen.Wait(30)
 
 								currentcinema = v.name
-								TriggerEvent('EnteringInCinema')
+								TriggerEvent('esx_cinema:enteredCinema')
 								SetEntityHeading(playerPed, 180.475)
 								TaskLookAtCoord(PlayerPedId(), 319.259, 251.827, 85.648, -1, 2048, 3)
 								FreezeEntityPosition(PlayerPedId(), 1)
 
-								ESX.ShowNotification('Appuyez sur la touche ~r~E~s~ pour sortir du cinéma.')
+								ESX.ShowNotification(_U('cinema_youpaid', ESX.Math.GroupDigits(price)))
+								ESX.ShowNotification(_U('cinema_entered'))
 							else
-								ESX.ShowNotification('Vous n\'avez pas assez d\'argent!')
+								ESX.ShowNotification(_U('cinema_poor'))
 							end
-						end)
+						end, choosenShow)
 
 					end, function(data, menu)
 						menu.close()
@@ -232,7 +238,7 @@ Citizen.CreateThread(function()
 
 			Citizen.Wait(30)
 			DoScreenFadeIn(800)
-			TriggerEvent('GetOutCinema')
+			TriggerEvent('esx_cinema:exitedCinema')
 			FreezeEntityPosition(playerPed, 0)
 			SetFollowPedCamViewMode(4)
 			DeconstructMovie()
