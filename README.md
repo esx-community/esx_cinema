@@ -1,17 +1,23 @@
 # esx_cinema
 
-Cette ressource provient à l'origine de :
-https://github.com/davedumas0/fiveM-movies
+An resource for ESX that adds movie theaters around San Andreas. Plently of shows are available to be enjoyed.
 
-Merci à Daviddumas0. Cette ressource doit être améliorée encore.
+## Credits
 
-Modifiée par Mr Reiben pour ESX avec sélection du film à l'entrée, repop à la sortie du cinéma d'entrée et paiement du prix de la place.
+- davedumas0, original resource
+- Mr Reiben, ported to ESX
+- ElPumpo, major improvements & cleanup
 
-si vous utilisez ESX_Voice, modifier le client\main.lua avec :
-- ajoutez en haut :
-local inCinema = false
+## Overlay fixes
 
-- et remplacer :
+Resources drawing 2d text on hud will appear in the cinema screen. To fix the problem, this resources comes with event triggers.. that trigger whenever the player leaves & enters the theater. The two trigger names are the following:
+
+- `esx_cinema:enteredCinema`
+- `esx_cinema:exitedCinema`
+
+### esx_voice
+
+Find the following
 
 ```lua
 if NetworkIsPlayerTalking(PlayerId()) then
@@ -21,7 +27,7 @@ elseif not NetworkIsPlayerTalking(PlayerId()) then
 end
  ```
 
-par : 
+And replace it with the following:
 
 ```lua
 if NetworkIsPlayerTalking(PlayerId()) and not inCinema then
@@ -30,13 +36,17 @@ elseif not NetworkIsPlayerTalking(PlayerId()) not inCinema then
 	drawLevel(185, 185, 185, 255)
 end
 ```
-- Pour terminer, à la fin, ajoutez :
+
+Then somewhere within the same file, add the following:
 
 ```lua
-RegisterNetEvent('esx_cinema:exitedCinema')
+inCinema = false
+
+AddEventHandler('esx_cinema:enteredCinema', function()
+	inCinema = true
+end)
+
 AddEventHandler('esx_cinema:exitedCinema', function()
-	if inCinema == true then
-		inCinema = false
-	end
+	inCinema = false
 end)
 ```
