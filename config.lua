@@ -6,9 +6,9 @@ Config.OpeningHour = 19
 Config.ClosingHour = 23
 
 Config.CinemaLocations = {
-	{ name = 'Downtown', coord = vector3(300.7, 200.7, 104.3), heading = 161.9 },
+	{ name = 'Downtown', coord = vector3(300.7, 200.7, 104.0), heading = 161.9 },
 	{ name = 'Morningwood', coord = vector3(-1423.9, -213.6, 46.5), heading = 350.0 },
-	{ name = 'Vinewood', coord = vector3(302.9, 135.9, 160.9), heading = 350.0 }
+	{ name = 'Vinewood', coord = vector3(302.9, 135.9, 103.0), heading = 350.0 }
 }
 
 Config.AvailableCinemaShows = {

@@ -1,5 +1,5 @@
 ESX = nil
-local currentcinema
+local currentCinema
 local choosenShow
 local MovieState = false
 local cin_screen = GetHashKey("v_ilev_cin_screen")
@@ -12,11 +12,9 @@ Citizen.CreateThread(function()
 
 	-- prettify menu childs
 	for k, v in pairs(Config.AvailableCinemaShows) do
-		v.label = ('%s - <span style="color:green;">%s</span>'):format(v.label, _U('menu_item', ESX.Math.GroupDigits(price)))
+		v.label = ('%s - <span style="color:green;">%s</span>'):format(v.label, _U('menu_item', ESX.Math.GroupDigits(v.price)))
 	end
 end)
-
-
 
 -- adds blips for movie theater
 function LoadBlips()
@@ -127,7 +125,7 @@ function IsPlayerInArea()
 	for k,v in ipairs(Config.CinemaLocations) do
 
 		-- Check if the player is near the cinema
-		if GetDistanceBetweenCoords(playerCoords, v.coord) < 4.8 then
+		if GetDistanceBetweenCoords(playerCoords, v.coord, true) < 4.8 then
 
 			-- Check if the cinema is open or closed.
 			if hour < Config.OpeningHour or hour > Config.ClosingHour then
@@ -151,22 +149,18 @@ function IsPlayerInArea()
 								SetupMovie()
 
 								Citizen.Wait(500)
-								ESX.Game.Teleport(playerPed, {
-									x = 320.217,
-									y = 263.81,
-									z = 81.974
-								})
+								ESX.Game.Teleport(playerPed, vector3(320.2, 263.8, 81.9))
 
 								DoScreenFadeIn(800)
 								Citizen.Wait(30)
 
-								currentcinema = v.name
+								currentCinema = v.name
 								TriggerEvent('esx_cinema:enteredCinema')
-								SetEntityHeading(playerPed, 180.475)
+								SetEntityHeading(playerPed, 180.0)
 								TaskLookAtCoord(PlayerPedId(), 319.259, 251.827, 85.648, -1, 2048, 3)
 								FreezeEntityPosition(PlayerPedId(), 1)
 
-								ESX.ShowNotification(_U('cinema_youpaid', ESX.Math.GroupDigits(price)))
+								ESX.ShowNotification(_U('cinema_youpaid', ESX.Math.GroupDigits(data.current.price)))
 								ESX.ShowNotification(_U('cinema_entered'))
 							else
 								ESX.ShowNotification(_U('cinema_poor'))
@@ -210,30 +204,14 @@ Citizen.CreateThread(function()
 		--if player hits "E" key while in theater they exit
 		if IsControlJustReleased(0, 38) and GetRoomKeyFromEntity(playerPed) == -1337806789 then
 			DoScreenFadeOut(1000)
-			if currentcinema == "Downtown" then
-				ESX.Game.Teleport(playerPed, {
-					x = 297.891,
-					y = 193.296,
-					z = 104.344
-				}, function()
-					SetEntityHeading(playerPed, 161.9)
-				end)
-			elseif currentcinema == "Morningwood" then
-				ESX.Game.Teleport(playerPed, {
-					x = -1421.356,
-					y = -198.388,
-					z = 47.28
-				}, function()
-					SetEntityHeading(playerPed, 350.0)
-				end)
-			elseif currentcinema == "Vinewood" then
-				ESX.Game.Teleport(playerPed, {
-					x = 303.278,
-					y = 142.258,
-					z = 103.846
-				}, function()
-					SetEntityHeading(playerPed, 350.0)
-				end)
+
+			for k,v in ipairs(Config.CinemaLocations) do
+				if v.name == currentCinema then
+					ESX.Game.Teleport(playerPed, v.coord, function()
+						SetEntityHeading(playerPed, v.heading)
+					end)
+					break
+				end
 			end
 
 			Citizen.Wait(30)
