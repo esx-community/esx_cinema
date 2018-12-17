@@ -37,7 +37,7 @@ function SetupMovie()
 	LoadInterior(cinema)
 
 	if not DoesEntityExist(tv) then
-		tv = CreateObjectNoOffset(cin_screen, 320.1257, 248.6608, 86.56934, 1, true, false)
+		tv = CreateObjectNoOffset(cin_screen, 320.1257, 248.6608, 86.56934, true, false, false)
 		SetEntityHeading(tv, 179.99)
 	else 
 		tv = GetClosestObjectOfType(319.884, 262.103, 82.917, 20.475, cin_screen, 0, 0, 0)
