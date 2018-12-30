@@ -198,7 +198,7 @@ end)
 
 Citizen.CreateThread(function()
 	while true do
-		Citizen.Wait(10)
+		Citizen.Wait(0)
 		local playerPed = PlayerPedId()
 
 		--if player hits "E" key while in theater they exit
