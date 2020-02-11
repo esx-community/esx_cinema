@@ -39,7 +39,7 @@ function SetupMovie()
 	if not DoesEntityExist(tv) then
 		tv = CreateObjectNoOffset(cin_screen, 320.1257, 248.6608, 86.56934, true, false, false)
 		SetEntityHeading(tv, 179.99)
-	else 
+	else
 		tv = GetClosestObjectOfType(319.884, 262.103, 82.917, 20.475, cin_screen, 0, 0, 0)
 	end
 
@@ -55,7 +55,7 @@ function SetupMovie()
 
 	local rendertargetid = GetNamedRendertargetRenderId("cinscreen")
 
-	-- this checks if the rendertarget is linked AND registered 
+	-- this checks if the rendertarget is linked AND registered
 	if IsNamedRendertargetLinked(cin_screen) and IsNamedRendertargetRegistered("cinscreen") then
 		-- this sets the rendertargets channel and video
 		Citizen.InvokeNative(0x9DD5A62390C3B735, 2, choosenShow, 0)
@@ -186,7 +186,7 @@ end)
 -- if the player is not inside theater delete screen
 Citizen.CreateThread(function()
 	if GetRoomKeyFromEntity(PlayerPedId()) ~= -1337806789 and DoesEntityExist(GetClosestObjectOfType(319.884, 262.103, 82.917, 20.475, cin_screen, 0, 0, 0)) then
-		DeconstructMovie() 
+		DeconstructMovie()
 	end
 
 	-- Create the blips for the cinema's
@@ -234,6 +234,6 @@ Citizen.CreateThread(function()
 		else
 			--SetEntityVisible(playerPed, true)
 			SetPlayerInvincible(PlayerId(), false)
-		end 
+		end
 	end
 end)
